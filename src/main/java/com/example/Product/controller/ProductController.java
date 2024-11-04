@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -31,8 +32,8 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public List<ProductDto> searchProducts(@RequestParam String keyword) {
-        return productService.searchProducts(keyword);
+    public List<Map<String, Object>> searchProducts(@RequestParam String keyword) {
+        return dataService.searchProducts(keyword);
     }
 }
 

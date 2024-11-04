@@ -4,12 +4,19 @@ import com.example.Product.model.Product;
 import com.example.Product.model.SKU;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,14 +62,44 @@ public class DataService {
                 System.out.println("Indexed product: " + response.getId());
             } catch (IOException e) {
                 System.err.println("IOException: " + e.getMessage());
-//                e.printStackTrace();
             } catch (NullPointerException e) {
                 System.err.println("NullPointerException: " + e.getMessage());
-//                e.printStackTrace();
             }
-
-//                e.printStackTrace();
         }
+    }
+
+    public List<Map<String, Object>> searchProducts(String keyword) {
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        try {
+            // Создаем запрос на поиск
+            SearchRequest searchRequest = new SearchRequest("products");
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+            // Добавляем MultiMatch запрос для поиска по полям продукта и SKU
+            BoolQueryBuilder query = QueryBuilders.boolQuery()
+                    .should(QueryBuilders.multiMatchQuery(keyword)
+                            .field("name")
+                            .field("description")
+                            .field("skus.skuCode")
+                            .field("skus.color")
+                            .field("skus.size"));
+
+            sourceBuilder.query(query);
+            searchRequest.source(sourceBuilder);
+
+            // Выполняем поиск
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            // Обрабатываем результаты
+            for (SearchHit hit : searchResponse.getHits().getHits()) {
+                results.add(hit.getSourceAsMap());
+            }
+        } catch (IOException e) {
+            System.err.println("IOException при выполнении поиска: " + e.getMessage());
+        }
+
+        return results;
     }
 }
 
